@@ -1,0 +1,63 @@
+<div class="min-h-screen flex items-center justify-center bg-gray-50">
+  <div class="max-w-md w-full bg-white rounded-lg shadow p-8">
+    <h2 class="text-2xl font-bold text-center mb-6">Create Account</h2>
+
+    @if (errorMessage()) {
+      <div class="bg-red-50 text-red-600 px-4 py-3 rounded mb-4">
+        {{ errorMessage() }}
+      </div>
+    }
+
+    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+        <input
+          formControlName="name"
+          type="text"
+          class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="John Doe"
+        />
+        @if (name.invalid && name.touched) {
+          <p class="text-red-500 text-xs mt-1">Name minimum 2 characters</p>
+        }
+      </div>
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+        <input
+          formControlName="email"
+          type="email"
+          class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="you@example.com"
+        />
+        @if (email.invalid && email.touched) {
+          <p class="text-red-500 text-xs mt-1">Valid email is required</p>
+        }
+      </div>
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+        <input
+          formControlName="password"
+          type="password"
+          class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="••••••••"
+        />
+        @if (password.invalid && password.touched) {
+          <p class="text-red-500 text-xs mt-1">Password minimum 6 characters</p>
+        }
+      </div>
+
+      <button
+        type="submit"
+        [disabled]="registerForm.invalid || isLoading()"
+        class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+      >
+        {{ isLoading() ? 'Creating account...' : 'Register' }}
+      </button>
+    </form>
+
+    <p class="text-center text-sm text-gray-600 mt-4">
+      Already have an account?
+      <a routerLink="/login" class="text-blue-600 hover:underline">Login</a>
+    </p>
+  </div>
+</div>
