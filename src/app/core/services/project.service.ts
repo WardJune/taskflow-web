@@ -40,7 +40,7 @@ export class ProjectService {
   }
 
   updateTask(taskId: number, req: UpdateTaskRequest) {
-    return this.http.put<ApiResponse<Task>>(`${this.apiUrl}/tasks/${taskId}`, req);
+    return this.http.patch<ApiResponse<Task>>(`${this.apiUrl}/tasks/${taskId}`, req);
   }
 
   deleteTask(taskId: number) {

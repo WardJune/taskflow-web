@@ -25,14 +25,14 @@ export const routes: Routes = [
         (m) => m.DashboardComponent,
       ),
   },
-  // {
-  //   path: 'projects/:id',
-  //   canActivate: [authGuard],
-  //   loadComponent: () =>
-  //     import('./features/projects/project-detail/project-detail.component').then(
-  //       (m) => m.ProjectDetailComponent,
-  //     ),
-  // },
+  {
+    path: 'projects/:id',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/projects/project-detail/project-detail.component').then(
+        (m) => m.ProjectDetailComponent,
+      ),
+  },
   {
     path: '**',
     redirectTo: '/dashboard',
