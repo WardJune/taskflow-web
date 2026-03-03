@@ -3,6 +3,7 @@ import { environment } from '../../../environtments/environments';
 import { HttpClient } from '@angular/common/http';
 import { CreateProjectRequest, Project, ProjectDetail } from '../../models/project.model';
 import { CreateTaskRequest, Task, UpdateTaskRequest } from '../../models/task.model';
+import { User } from '../../models/user.model';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -25,13 +26,17 @@ export class ProjectService {
     return this.http.get<ApiResponse<ProjectDetail>>(`${this.apiUrl}/projects/${id}`);
   }
 
+  getAvailableUserProject(id: number) {
+    return this.http.get<ApiResponse<User[]>>(`${this.apiUrl}/projects/${id}/users`);
+  }
+
   createProject(req: CreateProjectRequest) {
     return this.http.post<ApiResponse<Project>>(`${this.apiUrl}/projects`, req);
   }
 
   addMember(projectId: number, userId: number) {
     return this.http.post<ApiResponse<Project>>(`${this.apiUrl}/projects/${projectId}/members`, {
-      userId,
+      user_id: userId,
     });
   }
 

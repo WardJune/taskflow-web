@@ -1,9 +1,20 @@
 import { Injectable, signal } from '@angular/core';
 import { environment } from '../../../environtments/environments';
-import { AuthResponse, LoginRequest, RegisterRequest, User } from '../../models/user.model';
+import {
+  AuthResponse,
+  LoginRequest,
+  MeResponse,
+  RegisterRequest,
+  User,
+} from '../../models/user.model';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { tap } from 'rxjs';
+import { tap, throwError } from 'rxjs';
+
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+}
 
 @Injectable({
   providedIn: 'root',
@@ -27,6 +38,10 @@ export class AuthService {
       .pipe(tap((response) => this.handleAuthSuccess(response)));
   }
 
+  me() {
+    return this.http.get<ApiResponse<MeResponse>>(`${this.apiURL}/me`);
+  }
+
   login(req: LoginRequest) {
     return this.http
       .post<AuthResponse>(`${this.apiURL}/auth/login`, req)
@@ -45,8 +60,30 @@ export class AuthService {
     return localStorage.getItem('token');
   }
 
+  validateUser() {
+    const token = this.getToken();
+
+    if (!token) {
+      console.log('no token');
+      this.logout();
+      return throwError(() => new Error('No token found'));
+    }
+
+    return this.me().pipe(
+      tap({
+        next: (res) => {
+          if (!res.success) {
+            this.logout();
+          }
+        },
+        error: (err) => {
+          this.logout();
+        },
+      }),
+    );
+  }
+
   private handleAuthSuccess(response: AuthResponse) {
-    console.log(response);
     localStorage.setItem('token', response.data.token);
     localStorage.setItem('user', JSON.stringify(response.data.user));
     this.currentUser.set(response.data.user);

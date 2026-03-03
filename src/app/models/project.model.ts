@@ -2,7 +2,7 @@ import { Task } from './task.model';
 import { User } from './user.model';
 
 export interface Project {
-  id: string;
+  id: number;
   name: string;
   description: string;
   owner_id: number;
