@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { NavbarComponent } from '../../../shared/components/navbar/navbar.component';
 import { DatePipe } from '@angular/common';
@@ -8,6 +8,8 @@ import { ProjectService } from '../../../core/services/project.service';
 import { Task, TaskStatus, UpdateTaskRequest } from '../../../models/task.model';
 import { User } from '../../../models/user.model';
 import { isNull, toFinite } from 'lodash';
+import { Subject, takeUntil } from 'rxjs';
+import { WebsocketService, WsNotification } from '../../../core/services/websocket.service';
 
 @Component({
   selector: 'app-project-detail.component',
@@ -15,8 +17,9 @@ import { isNull, toFinite } from 'lodash';
   imports: [ReactiveFormsModule, NavbarComponent, DatePipe, RouterLink],
   templateUrl: './project-detail.component.html',
 })
-export class ProjectDetailComponent implements OnInit {
+export class ProjectDetailComponent implements OnInit, OnDestroy {
   private fb = inject(FormBuilder);
+  private destroy$ = new Subject<void>();
 
   project = signal<ProjectDetail | null>(null);
   isLoading = signal(true);
@@ -28,6 +31,8 @@ export class ProjectDetailComponent implements OnInit {
   editingTask = signal<Task | null>(null);
   deletingTask = signal<number | null>(null);
   errorMessage = signal('');
+
+  toast = signal<string>('');
 
   users = signal<User[]>([]);
 
@@ -42,6 +47,7 @@ export class ProjectDetailComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private projectService: ProjectService,
+    private wsService: WebsocketService,
   ) {
     this.taskForm = this.fb.group({
       title: ['', [Validators.required, Validators.minLength(2)]],
@@ -62,6 +68,61 @@ export class ProjectDetailComponent implements OnInit {
     this.projectId = Number(this.route.snapshot.paramMap.get('id'));
     this.loadProject();
     this.loadAvailableUsers();
+    this.connectWebSocket();
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+    this.wsService.disconnect();
+  }
+
+  connectWebSocket() {
+    this.wsService.connect(this.projectId);
+
+    this.wsService.notifications$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((notif) => this.handleNotification(notif));
+  }
+
+  handleNotification(notif: WsNotification) {
+    this.showToast(notif.message);
+
+    switch (notif.type) {
+      case 'task_created':
+        this.project.update((p) => {
+          if (!p) return p;
+          const exists = p.tasks.some((t) => t.id === notif.data?.id);
+          if (exists) return p;
+          return { ...p, tasks: [notif.data, ...p.tasks] };
+        });
+        break;
+      case 'task_updated':
+        this.project.update((p) =>
+          p
+            ? {
+                ...p,
+                tasks: p.tasks.map((t) => (t.id === notif.data?.id ? notif.data : t)),
+              }
+            : p,
+        );
+        break;
+      case 'task_deleted':
+        this.project.update((p) =>
+          p
+            ? {
+                ...p,
+                tasks: p.tasks.filter((t) => t.id !== notif.data?.task_id),
+              }
+            : p,
+        );
+        break;
+    }
+  }
+
+  showToast(message: string) {
+    this.toast.set(message);
+    setTimeout(() => this.toast.set(''), 3000);
   }
 
   loadProject() {
@@ -124,14 +185,14 @@ export class ProjectDetailComponent implements OnInit {
 
     this.projectService.createTask(this.projectId, formValue).subscribe({
       next: (res) => {
-        this.project.update((p) =>
-          p
-            ? {
-                ...p,
-                tasks: [res.data, ...p.tasks],
-              }
-            : p,
-        );
+        // this.project.update((p) =>
+        //   p
+        //     ? {
+        //         ...p,
+        //         tasks: [res.data, ...p.tasks],
+        //       }
+        //     : p,
+        // );
 
         this.taskForm.reset();
         this.showTaskForm.set(false);
